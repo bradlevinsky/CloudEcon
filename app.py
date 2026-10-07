@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 st.title("Brad Levinsky EC2 Instance EDA Dashboard")
 
@@ -397,6 +400,167 @@ memory_per_cpu = (
 )
 
 st.dataframe(memory_per_cpu)
+
+st.header("EC2 On-Demand Cost Prediction")
+
+regression_data = df[
+    [
+        "Memory_GiB",
+        "vCPU_Count",
+        "On Demand_USD"
+    ]
+].dropna()
+
+X = regression_data[
+    [
+        "Memory_GiB",
+        "vCPU_Count"
+    ]
+]
+
+y = regression_data["On Demand_USD"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+mae = mean_absolute_error(
+    y_test,
+    y_pred
+)
+
+mse = mean_squared_error(
+    y_test,
+    y_pred
+)
+
+rmse = mse ** 0.5
+
+st.subheader("Regression Model Information")
+
+col1, col2 = st.columns(2)
+
+col1.metric(
+    "Training Samples",
+    len(X_train)
+)
+
+col2.metric(
+    "Testing Samples",
+    len(X_test)
+)
+
+st.subheader("Model Performance")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric(
+    "MAE",
+    f"{mae:.4f}"
+)
+
+col2.metric(
+    "MSE",
+    f"{mse:.4f}"
+)
+
+col3.metric(
+    "RMSE",
+    f"{rmse:.4f}"
+)
+
+st.write(
+    f"Intercept: {model.intercept_:.6f}"
+)
+
+st.write(
+    f"Memory Coefficient: {model.coef_[0]:.6f}"
+)
+
+st.write(
+    f"vCPU Coefficient: {model.coef_[1]:.6f}"
+)
+
+prediction_results = pd.DataFrame({
+    "Actual Cost": y_test,
+    "Predicted Cost": y_pred
+})
+
+st.subheader("Actual vs Predicted On-Demand Costs")
+
+fig = px.scatter(
+    prediction_results,
+    x="Actual Cost",
+    y="Predicted Cost",
+    title="Actual vs Predicted On-Demand Costs"
+)
+
+min_cost = min(
+    prediction_results["Actual Cost"].min(),
+    prediction_results["Predicted Cost"].min()
+)
+
+max_cost = max(
+    prediction_results["Actual Cost"].max(),
+    prediction_results["Predicted Cost"].max()
+)
+
+fig.add_shape(
+    type="line",
+    x0=min_cost,
+    y0=min_cost,
+    x1=max_cost,
+    y1=max_cost
+)
+
+st.plotly_chart(
+    fig,
+    width="stretch"
+)
+
+st.subheader("Predict a New EC2 Instance Cost")
+
+prediction_memory = st.number_input(
+    "Memory (GiB)",
+    min_value=0.5,
+    value=4.0,
+    step=0.5
+)
+
+prediction_vcpus = st.number_input(
+    "vCPUs",
+    min_value=1,
+    value=2,
+    step=1
+)
+
+new_instance = pd.DataFrame(
+    {
+        "Memory_GiB": [prediction_memory],
+        "vCPU_Count": [prediction_vcpus]
+    }
+)
+
+predicted_cost = model.predict(
+    new_instance
+)[0]
+
+st.metric(
+    "Predicted On-Demand Hourly Cost",
+    f"${predicted_cost:.4f}"
+)
+
+st.write(
+    f"Estimated Monthly Cost: ${predicted_cost * 730:.2f}"
+)
 
 csv = filtered_df.to_csv(index=False)
 

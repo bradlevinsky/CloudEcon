@@ -157,7 +157,11 @@ print(
     len(X_test)
 )
 
-model = LinearRegression()
+model = LinearRegression(
+    positive=True,
+    fit_intercept=False
+)
+
 model.fit(X_train, y_train)
 
 print(f"Intercept: {model.intercept_}")
@@ -176,9 +180,15 @@ print(f"Root Mean Squared Error (RMSE): {rmse}")
 plt.figure(figsize=(8, 6))
 
 plt.scatter(y_test, y_pred, alpha=0.7)
+
+max_cost = max(
+    y_test.max(),
+    y_pred.max()
+)
+
 plt.plot(
-    [min(y_test), max(y_test)],
-    [min(y_test), max(y_test)]
+    [0, max_cost],
+    [0, max_cost]
 )
 
 plt.title("Actual vs Predicted On-Demand Costs")
@@ -191,7 +201,16 @@ plt.close()
 
 print("Prediction graph saved as actual_vs_predicted_cost.png")
 
-new_instance = [[4, 2]]
+new_instance = pd.DataFrame(
+    {
+        "Instance Memory": [4],
+        "vCPUs": [2]
+    }
+)
+
 predicted_cost = model.predict(new_instance)
 
-print(f"Predicted On-Demand Cost for 4 GiB, 2 vCPUs: ${predicted_cost[0]:.4f}")
+print(
+    f"Predicted On-Demand Cost for 4 GiB, 2 vCPUs: "
+    f"${predicted_cost[0]:.4f}"
+)

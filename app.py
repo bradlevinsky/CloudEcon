@@ -427,7 +427,11 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42
 )
 
-model = LinearRegression()
+model = LinearRegression(
+    positive=True,
+    fit_intercept=False
+)
+
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
@@ -503,11 +507,6 @@ fig = px.scatter(
     title="Actual vs Predicted On-Demand Costs"
 )
 
-min_cost = min(
-    prediction_results["Actual Cost"].min(),
-    prediction_results["Predicted Cost"].min()
-)
-
 max_cost = max(
     prediction_results["Actual Cost"].max(),
     prediction_results["Predicted Cost"].max()
@@ -515,8 +514,8 @@ max_cost = max(
 
 fig.add_shape(
     type="line",
-    x0=min_cost,
-    y0=min_cost,
+    x0=0,
+    y0=0,
     x1=max_cost,
     y1=max_cost
 )
